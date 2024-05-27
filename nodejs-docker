@@ -1,0 +1,19 @@
+node{
+    def bd= BUILD_NUMBER
+    stage("Codecheckout"){
+        git credentialsId: 'GitHubCred', url: 'https://github.com/krishna57474/nodejs-app.git'
+    }
+    
+    stage("BuildDockerImage"){
+        sh "docker build -t krishna1011/nodejs:${bd} ."
+    }
+    
+    stage("docker login and pushing the image"){
+         sh "docker login -u krishna1011 -p dckr_pat_Qc_pdXU7o32f70ACkx-xahIsFec"
+         
+    
+        sh "docker push krishna1011/nodejs:${bd}"
+    }
+
+
+//refering dockerfile from repository
