@@ -1,0 +1,37 @@
+node{
+    def bd= BUILD_NUMBER
+    def mavenHome= tool name: "maven", type: "maven" 
+    
+   stage("GitCodecheckout"){
+        git credentialsId: 'GitHubCred-1', url: 'https://github.com/krishna57474/maven-web-application.git'
+    }
+    
+   stage('BuildPackage')
+    {
+        sh "${mavenHome}/bin/mvn clean package"
+    }
+    
+    stage("buld docker Image")
+    {
+        sh "docker build -t krishna1011/maven-web-application:${bd} ."
+    }
+    
+    stage("docker login and pushing the image")
+    {
+        
+        sh "docker login -u krishna1011 -p dckr_pat_Qc_pdXU7o32f70ACkx-xahIsFec"
+         
+    
+        sh "docker push krishna1011/maven-web-application:${bd}"
+    }
+    
+    stage("DeployingContainer") 
+    {
+      sshagent(['6fe7d7e9-9a00-4da6-8227-c1f4e659d222'])
+      {
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.38.160 docker rm -f mvncontainer||true"
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.38.160 docker run -d --name mvncontainer -p 8090:8080 krishna1011/maven-web-application:${bd}"
+      }
+            
+    }
+}
