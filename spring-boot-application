@@ -1,0 +1,40 @@
+node{
+    def bd= BUILD_NUMBER
+    def mavenHome= tool name: "maven", type: "maven"
+    
+    stage("CodeCheckOut"){
+        git credentialsId: 'GitHubCred-1', url: 'https://github.com/krishna57474/spring-boot-mongo.git'
+    }
+    
+    stage("BuidCodePackage"){
+        sh "${mavenHome}/bin/mvn clean package"
+    }
+    
+    stage("buld docker Image")
+    {
+        sh "docker build -t krishna1011/spring-boot-app:${bd} ."
+    }
+    
+     stage("docker login and pushing the image")
+    {
+        
+        sh "docker login -u krishna1011 -p dckr_pat_Qc_pdXU7o32f70ACkx-xahIsFec"
+         
+    
+        sh "docker push krishna1011/spring-boot-app:${bd}"
+    }
+    
+    stage("Creating container network and DeployingContainer with MongoDB") 
+    {
+      sshagent(['6fe7d7e9-9a00-4da6-8227-c1f4e659d222'])
+      {
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@13.235.27.17 docker rm -f springapp||true"
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@13.235.27.17 docker rm -f mongo||true"
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@13.235.27.17 docker network rm springappbridge||true"
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@13.235.27.17 docker network create springappbridge"
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@13.235.27.17 docker run -d --network springappbridge --name mongo -e MONGO_INITDB_ROOT_USERNAME=devdb -e MONGO_INITDB_ROOT_PASSWORD=devdb@123 mongo"
+      sh "ssh -o StrictHostKeyChecking=no ubuntu@13.235.27.17 docker run -d --network springappbridge --name springapp -p 8080:8080 -e MONGO_DB_HOSTNAME=mongo -e MONGO_DB_USERNAME=devdb -e MONGO_DB_PASSWORD=devdb@123 krishna1011/spring-boot-app:${bd}"
+      }
+            
+    }
+}
